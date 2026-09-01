@@ -1,0 +1,231 @@
+// Prisma schema for the AI-Based Construction Progress Monitoring
+// and Delay Prediction System.
+//
+// Design notes (for viva explainability):
+// - User: a project manager / system user (no auth implemented yet — Prompt 1 scope).
+// - Project: a construction project being tracked.
+// - ProgressRecord: one periodic (weekly/monthly) planned-vs-actual observation.
+// - ConstructionImage: a site photo uploaded for a project, optionally tied to a
+//   ProgressRecord, stored in Supabase Storage (only metadata lives here).
+// - AIAnalysis: the structured result of running one image through the Python
+//   AI service (YOLOv11 + OpenCV). One-to-one with ConstructionImage.
+// - DelayPrediction: the transparent, rule-based delay assessment derived from
+//   a ProgressRecord's schedule deviation (see docs/delay-prediction.md).
+// - Report: a generated progress report snapshot for a project.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// A project manager / system user. Authentication is out of scope for this
+/// prompt; this model exists so Projects have a clear owner from day one.
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects Project[]
+
+  @@map("users")
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  ON_HOLD
+  DELAYED
+  COMPLETED
+}
+
+/// A construction project being monitored.
+model Project {
+  id                String        @id @default(cuid())
+  name              String
+  description       String?
+  location          String?
+  status            ProjectStatus @default(PLANNING)
+  startDate         DateTime
+  expectedEndDate   DateTime
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  managerId String
+  manager   User   @relation(fields: [managerId], references: [id], onDelete: Restrict)
+
+  progressRecords   ProgressRecord[]
+  images            ConstructionImage[]
+  delayPredictions  DelayPrediction[]
+  reports           Report[]
+
+  @@index([managerId])
+  @@map("projects")
+}
+
+enum ProgressStatus {
+  AHEAD
+  ON_TRACK
+  AT_RISK
+  DELAYED
+}
+
+/// One periodic (weekly/monthly) planned-vs-actual progress observation
+/// for a project. `deviation` and `status` are derived values, persisted
+/// so historical dashboards don't need to recompute them.
+model ProgressRecord {
+  id               String          @id @default(cuid())
+  projectId        String
+  project          Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  recordDate       DateTime
+  plannedProgress  Float // percentage, 0-100
+  actualProgress   Float? // percentage, 0-100; null until estimated/confirmed
+  deviation        Float? // actualProgress - plannedProgress
+  status           ProgressStatus?
+  notes            String?
+
+  createdAt        DateTime @default(now())
+
+  images           ConstructionImage[]
+  delayPrediction  DelayPrediction?
+  reports          Report[]
+
+  @@unique([projectId, recordDate])
+  @@index([projectId])
+  @@map("progress_records")
+}
+
+enum AnalysisStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+/// Metadata for a construction-site image. The binary lives in Supabase
+/// Storage — only the storage path / URL is persisted here.
+model ConstructionImage {
+  id                String          @id @default(cuid())
+  projectId         String
+  project           Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  progressRecordId  String?
+  progressRecord    ProgressRecord? @relation(fields: [progressRecordId], references: [id], onDelete: SetNull)
+
+  storagePath       String // path within the Supabase Storage bucket
+  imageUrl          String // public or signed URL for display
+  originalFilename  String
+  fileSizeBytes     Int?
+
+  analysisStatus    AnalysisStatus @default(PENDING)
+  uploadedAt        DateTime       @default(now())
+
+  analysis          AIAnalysis?
+
+  @@index([projectId])
+  @@index([progressRecordId])
+  @@map("construction_images")
+}
+
+/// Structured output of the Python AI service's real YOLO11 analysis of
+/// one ConstructionImage. Mirrors the AI service's response contract
+/// (see ai-service/app/models/analysis.py). One row per ConstructionImage,
+/// upserted on every analysis run (re-analyzing replaces the previous
+/// result rather than accumulating duplicates).
+///
+/// Prompt 4 schema note: `completionPercentage` was defined in Prompt 1
+/// anticipating a construction-progress estimate, but the generic
+/// pretrained YOLO11 model used here cannot honestly produce one (see
+/// docs/ai-pipeline.md) — it is made nullable and intentionally left null
+/// rather than fabricated. Most fields are nullable so a FAILED analysis
+/// can still be persisted (with only `status`/`errorMessage` set) without
+/// needing placeholder values for the rest.
+model AIAnalysis {
+  id                    String            @id @default(cuid())
+  constructionImageId   String            @unique
+  constructionImage     ConstructionImage @relation(fields: [constructionImageId], references: [id], onDelete: Cascade)
+
+  status                AnalysisStatus @default(PENDING)
+
+  modelVersion          String? // e.g. "yolo11n.pt" — which checkpoint produced this result
+  imageWidth            Int?
+  imageHeight           Int?
+  detectedObjects       Json? // array of { classId, className, confidence, bbox }
+  objectCounts          Json? // { [className]: count } — deterministic aggregation of detectedObjects
+  averageConfidence     Float? // mean confidence across detections; null (not 0) if none were found
+  analysisSummary       String? // short factual description of what was detected — never a progress claim
+  annotatedStoragePath  String? // Supabase Storage path of the boxes/labels visualization, if generated
+  processingTimeMs      Int?
+  errorMessage          String? // set when status = FAILED; safe, human-readable
+
+  // Retained from Prompt 1. Construction-specific completion-percentage
+  // estimation requires a domain-trained model that does not exist yet —
+  // this stays null. Never populate it from a generic object-detection
+  // result.
+  completionPercentage  Float?
+  confidence            Float?
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("ai_analyses")
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+/// Transparent, rule-based delay assessment derived from a single
+/// ProgressRecord's schedule deviation and the project's historical trend.
+/// See docs/delay-prediction.md for the documented methodology; no
+/// arbitrary/hard-coded delay values are used.
+model DelayPrediction {
+  id                  String   @id @default(cuid())
+  projectId           String
+  project             Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  progressRecordId    String   @unique
+  progressRecord      ProgressRecord @relation(fields: [progressRecordId], references: [id], onDelete: Cascade)
+
+  deviation           Float
+  estimatedDelayDays  Int
+  riskLevel           RiskLevel
+  explanation         String
+  methodology         String // short label for which baseline rule produced this result
+
+  createdAt           DateTime @default(now())
+
+  @@index([projectId])
+  @@map("delay_predictions")
+}
+
+/// A generated progress report snapshot for a project (optionally tied to
+/// a specific ProgressRecord). `reportData` holds the structured content
+/// used to render/export the report; `reportUrl` is set if/when an
+/// exported file (e.g. PDF) is stored in Supabase Storage.
+model Report {
+  id                String          @id @default(cuid())
+  projectId         String
+  project           Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  progressRecordId  String?
+  progressRecord    ProgressRecord? @relation(fields: [progressRecordId], references: [id], onDelete: SetNull)
+
+  title             String
+  reportData        Json
+  reportUrl         String?
+
+  generatedAt       DateTime @default(now())
+
+  @@index([projectId])
+  @@map("reports")
+}

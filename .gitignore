@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+web/node_modules/
+
+# Next.js
+web/.next/
+web/out/
+
+# Python
+ai-service/.venv/
+__pycache__/
+*.pyc
+
+# Environment / secrets
+.env
+.env.*
+web/.env
+web/.env.*
+ai-service/.env
+ai-service/.env.*
+
+# YOLO model weights
+ai-service/models/*.pt
+
+# Logs
+*.log
+
+# OS
+.DS_Store

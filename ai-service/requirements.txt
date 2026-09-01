@@ -1,0 +1,26 @@
+# --- Web framework ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+pydantic==2.10.4
+pydantic-settings==2.7.0
+httpx==0.28.1
+
+# --- Computer vision / ML stack ---
+# Real YOLO11 inference is wired up via Ultralytics (app/services/detector.py).
+# opencv-python-headless is used deliberately (not opencv-python) since this
+# runs on a headless server with no display/X11/libGL available; if `pip install
+# -r requirements.txt` pulls in opencv-python as a transitive dependency of
+# ultralytics, reinstall the headless build afterward:
+#   pip uninstall -y opencv-python && pip install --force-reinstall opencv-python-headless==4.10.0.84
+opencv-python-headless==4.10.0.84
+torch==2.5.1
+ultralytics==8.3.53   # ships YOLOv11
+
+# --- Data processing ---
+numpy==1.26.4
+pandas==2.2.3
+
+# --- Testing ---
+pytest==8.3.4
+respx==0.22.0

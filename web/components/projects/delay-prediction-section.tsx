@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { riskBadgeVariant } from "@/lib/constants/risk";
 import {
   Bar,
   BarChart,
@@ -305,18 +306,6 @@ function KpiCard({
   );
 }
 
-/**
- * Display-only mapping for the engine's PredictionRiskLevel ("MODERATE").
- * Deliberately separate from lib/constants/status.ts's RISK_LEVEL handling
- * (if any is ever added for the Prisma `RiskLevel` enum, which spells its
- * middle band "MEDIUM") — see lib/services/delay-prediction.ts's doc
- * comment on `PredictionRiskLevel`.
- */
-export function riskBadgeVariant(level: PredictionRiskLevel): "success" | "warning" | "destructive" {
-  if (level === "LOW") return "success";
-  if (level === "MODERATE") return "warning";
-  return "destructive";
-}
 
 const BAR_WIDTH = 24;
 

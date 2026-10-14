@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AnalysisStatusBadge, ProgressStatusBadge } from "@/components/projects/status-badge";
-import { riskBadgeVariant } from "@/components/projects/delay-prediction-section";
+import { riskBadgeVariant } from "@/lib/constants/risk";
 import { ReportProgressChart } from "@/components/reports/report-progress-chart";
 import { REPORT_DISCLAIMER_POINTS, REPORT_METHODOLOGY_SECTIONS } from "@/lib/reports/formatting";
 import { formatDate, formatDateTime, formatPercent, formatSignedPercent } from "@/lib/format";

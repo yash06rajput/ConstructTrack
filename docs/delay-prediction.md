@@ -1,11 +1,11 @@
 # Delay Prediction & Schedule Risk Methodology
 
-This document supersedes the Prompt 1 baseline write-up that used to live
+This document supersedes the per-record baseline write-up that used to live
 here. That baseline (`estimateDelay()` / `classifyRisk()` in
 `lib/services/delay-prediction.ts`) still exists and still powers
 `POST /api/delay` and `prisma/seed.ts` unchanged — it is a simple,
 single-record, deviation-proportional estimate. This document describes
-the newer, richer, project-level engine added in Prompt 6
+the newer, richer, project-level engine used by the project detail page
 (`computeDelayPrediction()` and friends, in the same file), which is what
 powers the "Delay Prediction & Schedule Risk" section on the project
 detail page and `GET /api/delay-prediction`.
@@ -52,7 +52,7 @@ Positive = ahead of plan, negative = behind, zero = exactly on plan.
 
 Uses the **real elapsed calendar time** between the earliest and latest
 progress records that have a recorded `actualProgress` — never an assumed
-weekly cadence. This reuses Prompt 5's `computeProgressTrend()`
+weekly cadence. This reuses the progress-analytics module's `computeProgressTrend()`
 (`lib/services/progress-analytics.ts`) directly:
 
 ```
@@ -239,7 +239,7 @@ estimatedDelayProbability = round(0.40*65 + 0.40*65 + 0.20*50) = round(62) = 62
 
 The existing `DelayPrediction` Prisma model is a **one-to-one** relation
 with a single `ProgressRecord` (`progressRecordId String @unique`) and
-stores the Prompt 1 baseline's per-record output. The Prompt 6 engine's
+stores the per-record baseline's per-record output. The project-level delay engine's
 result is **project-level** (derived from the whole progress history, not
 one record) and changes shape whenever any record in that history changes
 — it does not map onto that one-to-one model without either overloading
@@ -247,15 +247,15 @@ its meaning or a schema change.
 
 Rather than adding a new, largely-redundant table purely to cache a value
 that is cheap to recompute (a handful of arithmetic operations over
-records already loaded for the page), the Prompt 6 engine is **computed
+records already loaded for the page), the project-level delay engine is **computed
 dynamically** on every read — both by `GET /api/delay-prediction` and, on
 the project detail page itself, directly from the same pure function
 (mirroring the existing `ProgressKpiCards` / `computeProgressSummary`
-pattern from Prompt 5, avoiding a second network round-trip). The
-existing `DelayPrediction` table and the Prompt 1 baseline it stores are
+pattern used by progress analytics, avoiding a second network round-trip). The
+existing `DelayPrediction` table and the per-record baseline it stores are
 left completely untouched.
 
-"Prediction history" (§14 of the Prompt 6 brief) is reconstructed the same
+"Prediction history" (the design requirements) is reconstructed the same
 way — `computeDelayPredictionHistory()` re-runs the deterministic engine
 with an increasingly later `asOfDate` cutoff for each actual-bearing
 progress record, so the sequence of past risk assessments is always

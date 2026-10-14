@@ -1,33 +1,50 @@
-# ConstructTrack — Automated Construction Progress Monitoring, Delay Prediction & Risk Reporting System
+# ConstructTrack
 
-A web-based system for tracking construction-site progress from real project data and site photographs, analyzing that photographic evidence with computer vision, and turning the combined data into schedule-risk predictions and professional progress reports.
+**Automated Construction Progress Monitoring, Delay Prediction & Risk Reporting System**
+
+A web-based system that tracks construction-site progress from real project data and site photographs, analyses that photographic evidence with computer vision, and turns the combined data into explainable schedule-risk predictions and professional progress reports.
+
+| | |
+|---|---|
+| **Course** | Minor Project (ES-451), B.Tech Information Technology, 7th semester, 2026–27 |
+| **Institute** | Maharaja Agrasen Institute of Technology, Delhi (GGSIPU) |
+| **Team 54** | Ashish Upadhyay (06714803123) · Yash Rajput (06814803123) · Sahil Rao (07614803123) |
+| **Faculty guide** | Dr. Seema Kalonia |
+| **Live demo** | _add your Vercel URL here_ |
+
+## Contents
+
+- [Overview](#overview) · [Features](#features) · [System Workflow](#system-workflow) · [Architecture](#architecture)
+- [AI/ML Pipeline](#aiml-pipeline) · [Progress Analytics](#progress-analytics) · [Delay Prediction & Risk Analysis](#delay-prediction--risk-analysis) · [Automated Reporting](#automated-reporting)
+- [Evaluation](#evaluation) · [Technology Stack](#technology-stack) · [Project Structure](#project-structure)
+- [Getting Started](#getting-started) · [Deployment](#deployment) · [API Overview](#api-overview) · [Testing](#testing)
+- [Security](#security-considerations) · [Limitations](#known-limitations) · [Future Scope](#future-scope) · [Documentation](#documentation)
 
 ## Overview
 
-ConstructTrack centralizes the day-to-day information a construction project manager already collects — planned vs. actual progress updates and periodic site photographs — and layers three analytical capabilities on top of it:
+ConstructTrack centralises the information a construction project manager already collects — periodic planned-vs-actual progress updates and site photographs — and builds three analytical capabilities on top of it:
 
-- **Computer-vision analysis** of uploaded construction images using a YOLO11 object-detection model, kept explicitly as supporting visual evidence rather than a measure of completion.
-- **Progress analytics** that compare recorded progress against the planned schedule and compute a real, elapsed-time-based trend.
-- **Delay prediction and risk scoring** that projects a likely completion date and a documented, deterministic 0–100 schedule-risk score from the project's own historical progress records.
+- **Computer-vision analysis** of uploaded site images with a YOLO11 object-detection model, kept strictly as supporting visual evidence and never used as a measure of completion.
+- **Progress analytics** that compare recorded progress with the planned schedule and compute a trend over real elapsed time.
+- **Delay prediction and risk scoring** that project a likely completion date and a documented, deterministic 0–100 schedule-risk score from the project's own progress history, and that refuse to predict when there is not enough data.
 
-All of this is consolidated into an automated project report — viewable on the web, printable, and exportable as a PDF — built entirely from server-calculated values. No metric shown anywhere in the system is accepted from client input; every progress percentage, risk score, or predicted date is computed from the database on the server.
+Everything is consolidated into an automated project report, viewable on the web, printable, and exportable as a PDF. No metric is ever accepted from the client: every progress percentage, risk score and predicted date is computed on the server from the database.
 
-The system consists of two independently run services: a Next.js application (UI, API, database access) and a Python FastAPI service (YOLO11 inference).
-
-For a formal project synopsis (abstract, problem statement, objectives, scope), see [`docs/project-synopsis.md`](docs/project-synopsis.md).
+The system consists of two independently deployable services: a Next.js application (UI, API, database access) and a Python FastAPI service (YOLO11 inference). For the formal synopsis, see [`docs/project-synopsis.md`](docs/project-synopsis.md).
 
 ## Features
 
-- **Project management** — create, edit, and track construction projects with a planned schedule (start date, expected end date), status, and location.
-- **Progress tracking** — record periodic planned-vs-actual progress observations, with automatically derived deviation and status (ahead / on track / at risk / delayed).
-- **Construction image management** — upload site photographs (JPEG/PNG/WEBP), organized by project and optionally linked to a specific progress record, stored in Supabase Storage and served via short-lived signed URLs.
-- **Computer-vision analysis** — run real YOLO11 object detection on an uploaded image and persist the structured result (detected objects, confidence scores, an annotated image).
-- **Progress analytics** — current completion, planned-vs-actual variance, and a real elapsed-time progress trend, computed from the project's own recorded history.
-- **Delay prediction** — an estimated completion date, a predicted delay in days, and an "Estimated Delay Probability" heuristic, all clearly labeled as deterministic (not machine-learned) estimates, with explicit "insufficient data" handling.
-- **Risk analysis** — a documented, weighted 0–100 "Schedule Risk Score" with LOW / MODERATE / HIGH / CRITICAL bands and factor-level explanations.
-- **Automated reporting** — a structured project report (executive summary, progress history, image summary, AI evidence, delay prediction, risk analysis, methodology, limitations) generated from a single `projectId`.
-- **PDF export** — a genuine, server-rendered PDF version of the same report.
-- **Dashboard** — a portfolio-level view of total/active projects, average completion, and at-risk project counts.
+- **Project management** — create, edit and delete construction projects with a planned schedule (start date, expected end date), status and location.
+- **Progress tracking** — record periodic planned-vs-actual observations, with automatically derived deviation and status (ahead / on track / at risk / delayed).
+- **Construction image management** — upload site photographs (JPEG/PNG/WEBP), optionally linked to a specific progress record; stored in a private bucket and served through short-lived signed URLs; gallery, timeline and side-by-side comparison views. Large phone photos are downscaled in the browser before upload.
+- **Computer-vision analysis** — run YOLO11 object detection on an uploaded image and persist the structured result (detected objects, counts, confidence scores, annotated image).
+- **Progress analytics** — current completion, planned-vs-actual variance and an elapsed-time progress trend, plus AI detection-count trends over time.
+- **Delay prediction** — estimated completion date, predicted delay in days and an "Estimated Delay Probability" heuristic, with explicit "insufficient data" handling.
+- **Risk analysis** — a documented, weighted 0–100 Schedule Risk Score with LOW / MODERATE / HIGH / CRITICAL bands and factor-level explanations.
+- **Automated reporting** — a structured project report generated from a single project ID and stored as a snapshot.
+- **PDF export** — a genuine, server-rendered PDF of the same report.
+- **Dashboard** — portfolio view of total/active projects, average completion and at-risk projects.
+- **Cloud deployment** — Vercel + Supabase + Hugging Face Spaces, with automatic database migrations and an API-key-protected AI service.
 
 ## System Workflow
 
@@ -63,65 +80,20 @@ View / Print / Download PDF
 
 ## Architecture
 
+![System architecture](docs/images/architecture.png)
+
 ```text
-                    Construction Project
-                           │
-                           ▼
-                  Project & Progress Data
-                           │
-                           ▼
-                  Construction Images
-                           │
-                           ▼
-                    AI / YOLO11 Analysis
-                           │
-              ┌────────────┴────────────┐
-              ▼                         ▼
-       Visual Evidence           Stored Analysis
-              │                         │
-              └────────────┬────────────┘
-                           ▼
-                  Progress Analytics
-                           │
-                           ▼
-                  Delay Prediction
-                           │
-                           ▼
-                     Risk Analysis
-                           │
-                           ▼
-                    Report Builder
-                      │         │
-                      ▼         ▼
-                 Web Report    PDF Report
+Construction Project → Progress Data → Site Images → YOLO11 Analysis (visual evidence)
+                                   ↓
+                       Progress Analytics → Delay Prediction → Risk Analysis
+                                   ↓
+                         Report Builder → Web Report / PDF
 ```
 
-Two independently deployable services:
+- **`web/`** — Next.js 15 (App Router) application. Owns the UI, the API routes, database access (Prisma) and Supabase Storage integration. Calls the AI service over HTTP and never runs Python itself.
+- **`ai-service/`** — FastAPI application. Owns image preprocessing and YOLO11 inference. Stateless: it receives a short-lived signed image URL and returns structured detection JSON; it never talks to PostgreSQL or Supabase directly. An optional shared secret (`X-API-Key`) protects it when publicly hosted.
 
-- **`web/`** — Next.js 15 (App Router) application. Owns the UI, the API routes, database access (via Prisma), and Supabase Storage integration. Calls the AI service over plain HTTP and never runs Python itself.
-- **`ai-service/`** — FastAPI application. Owns image preprocessing and YOLO11 inference. Stateless: it receives a short-lived signed image URL and returns structured detection JSON; it never talks to PostgreSQL or Supabase directly.
-
-Within `web/`, data flows through a consistent layering: API routes validate input (Zod) and delegate to service functions; service functions perform the database work and call pure, independently-tested analytics engines (progress analytics, delay prediction, report composition); the report builder never recalculates a value those engines already produce, and the web report and PDF export both render the same underlying `ReportData` snapshot.
-
-## Screenshots
-
-The screenshots below are the recommended, minimal set to demonstrate the complete workflow — they are not yet included in this repository and need to be captured from a running instance with representative demo data (see [Getting Started](#getting-started)). Once captured, save each file at the path shown and it will render inline.
-
-| Screenshot | Path | What it should show |
-|---|---|---|
-| Dashboard | `docs/screenshots/01-dashboard.png` | Portfolio stat cards (total/active projects, average completion, at-risk count) and the recent-projects table, populated with real project data. |
-| Projects list | `docs/screenshots/02-projects-list.png` | The project cards/table with meaningful names, statuses, and completion values. |
-| Project detail | `docs/screenshots/03-project-detail.png` | Project header/info plus navigation into progress, images, AI analysis, delay prediction, and reports. |
-| Progress tracking | `docs/screenshots/04-progress-tracking.png` | Progress KPI cards, the planned-vs-actual chart, and the historical progress table. |
-| Construction images | `docs/screenshots/05-construction-images.png` | The image gallery with upload dates and analysis status, in a populated (non-empty) state. |
-| AI analysis | `docs/screenshots/06-ai-analysis.png` | A completed analysis result — detected objects, confidence values, and the "visual evidence only" labeling. |
-| Delay prediction | `docs/screenshots/07-delay-prediction.png` | Estimated completion date, predicted delay, data-sufficiency label, and supporting KPI cards. |
-| Risk analysis | `docs/screenshots/08-risk-analysis.png` | The schedule risk score, its risk band, and the factor-level explanations. |
-| Reports list | `docs/screenshots/09-reports-list.png` | The generated-reports table with title, generation date, and View/Download actions. |
-| Report detail | `docs/screenshots/10-report-detail.png` | Enough of the web report (header through methodology/limitations) to show it is a complete, professional document. |
-| PDF report | `docs/screenshots/11-pdf-report.png` | The actual exported PDF file opened in a PDF viewer — not a screenshot of the HTML report. |
-
-See [`docs/screenshots/README.md`](docs/screenshots/README.md) for the full naming convention and capture notes.
+Within `web/`, API routes validate input (Zod) and delegate to service functions; services do the database work and call pure, independently tested analytics engines (progress analytics, delay prediction, report composition). The dashboard, API and report all use the same engine functions, so they always show identical numbers, and the web report and PDF render the same stored `ReportData` snapshot.
 
 ## AI/ML Pipeline
 
@@ -166,74 +138,77 @@ YOLO11 detection counts, where available, appear only as an optional, clearly-la
 
 A report is generated from a single request containing only a `projectId` — every value inside it (progress figures, image/analysis counts, delay prediction, risk score) is retrieved from the database and computed server-side by the same progress-analytics and delay-prediction engines described above; the client can never submit a calculated metric. Each report is persisted as a structured snapshot (`Report.reportData`), so the report history for a project reflects what the system actually reported at that point in time. Reports can be viewed as a formatted web page (print-friendly), and downloaded as a genuine PDF built with PDFKit, containing the same sections in the same order — report header, executive summary, project overview, progress analytics and history, construction image summary, AI computer-vision analysis, delay prediction, risk analysis, methodology, and limitations/disclaimer. The PDF is text/table-based; it does not currently embed the progress chart. See [`docs/reporting.md`](docs/reporting.md) for the full report architecture.
 
+## Evaluation
+
+The delay and risk engine is evaluated on structured scenarios against a deviation-only baseline, checked for determinism, and tested for sensitivity to its weights. Every number below is reproduced by:
+
+```bash
+cd web
+npm run evaluate
+```
+
+| Scenario | Usable records | Deviation | Velocity ratio | Predicted delay | Risk score (band) | Deviation-only baseline |
+|---|---|---|---|---|---|---|
+| Office, slipping | 5 | −10 | 0.67 | 70 days | 72 (HIGH) | MEDIUM |
+| Tower, on plan | 4 | −1 | 1.00 | 2 days | 23 (LOW) | LOW |
+| Retail, ahead | 3 | +6 | 1.33 | 0 (21 days early) | 10 (LOW) | LOW |
+| Annex, stalled | 4 | −21 | 0.30 | 321 days | 91 (CRITICAL) | CRITICAL |
+| Single record | 1 | −2 | — | — | withheld (insufficient data) | LOW |
+| Exact pace | 2 | 0 | 1.00 | 0 | 15 (LOW) | LOW |
+
+![Risk score per scenario](docs/images/risk-evaluation.png)
+
+- The slipping office is rated **HIGH** (70-day projected overrun) where the deviation-only rule says MEDIUM: its pace is two-thirds of what is required and its deviation is widening.
+- With a single record, the engine **withholds** a prediction; the baseline still labels it.
+- **Determinism:** 1,000 repeated runs give identical output.
+- **Weight sensitivity:** ±20% changes to any single weight change no band (0/32 cases). Over 10,000 random ±30% weight sets, scores shift at most 5 points and the ranking of the four projects is preserved every time; band changes (4.6%) occur only for the on-plan tower, whose score sits just below the LOW/MODERATE boundary.
+
+These results show consistency and interpretability, not forecast accuracy — calibrating against real project outcomes is future work. The demo seed data (`npm run db:seed`) uses the same four project scenarios.
+
 ## Technology Stack
 
-**Frontend**
-- Next.js 15 (App Router), React 19, TypeScript
-- Tailwind CSS, shadcn/ui component primitives (Radix UI)
-- Recharts (progress and AI-detection charts)
-
-**Backend**
-- Next.js API Routes (REST-style JSON, Zod request validation)
-- Prisma ORM
-- PostgreSQL
-
-**Storage**
-- Supabase Storage (construction image binaries, private bucket, short-lived signed URLs)
-
-**AI / Computer Vision**
-- Python, FastAPI
-- YOLO11 via Ultralytics
-- OpenCV (headless), PyTorch, NumPy, Pandas
-
-**Reporting**
-- PDFKit (server-side PDF generation)
+| Layer | Technologies |
+|---|---|
+| Frontend | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS 4, shadcn/ui (Radix UI), Recharts |
+| Backend | Next.js API routes, Zod validation, Prisma ORM 6, PostgreSQL |
+| Storage | Supabase Storage (private bucket, short-lived signed URLs) |
+| AI / Computer vision | Python, FastAPI, YOLO11 (Ultralytics), OpenCV (headless), PyTorch, NumPy, Pandas |
+| Reporting | PDFKit (server-side PDF generation) |
+| Testing | Node test runner via `tsx`, pytest, ESLint, TypeScript strict mode |
+| Deployment | Vercel (web), Supabase (database + storage), Hugging Face Spaces / Docker (AI service) |
 
 ## Project Structure
 
 ```text
-web/                        Next.js application
+web/                          Next.js application
 ├── app/
-│   ├── (dashboard)/         Dashboard, projects, reports pages (App Router)
-│   └── api/                 API routes: projects, progress, images, analysis,
-│                             delay, delay-prediction, reports (+ PDF)
-├── components/
-│   ├── ui/                   shadcn/ui primitives
-│   ├── layout/                App shell (sidebar, header, nav)
-│   ├── projects/               Project detail sections (progress, delay
-│   │                            prediction, reports, status badges, ...)
-│   └── reports/                 Report view, PDF/print controls, report tables
+│   ├── (dashboard)/            Dashboard, projects and reports pages
+│   └── api/                    projects, progress, images, analysis, delay,
+│                               delay-prediction, reports (+ PDF)
+├── components/                 UI primitives, layout, project sections,
+│                               construction images, reports
 ├── lib/
 │   ├── api/                    Shared API error/response helpers
-│   ├── validation/               Zod schemas per resource
-│   ├── services/                  Business logic and database access
-│   ├── serializers/                Plain, JSON-safe response shapes
-│   ├── reports/                     Report data contract, formatting, PDF renderer
-│   └── supabase/                     Supabase Storage client (server-only)
-├── prisma/
-│   ├── schema.prisma                 Database schema
-│   └── seed.ts                        Demo data seeder
+│   ├── validation/             Zod schemas per resource
+│   ├── services/               Business logic, analytics engines (+ tests)
+│   ├── serializers/            JSON-safe response shapes
+│   ├── reports/                Report contract, formatting, PDF renderer
+│   ├── images/                 Upload constants, queue, client-side compression
+│   └── supabase/               Supabase Storage clients
+├── prisma/                     schema.prisma, migrations, seed.ts (demo data)
+├── scripts/
+│   └── evaluate-risk-engine.ts Reproduces the evaluation results
 └── package.json
 
-ai-service/                 Python FastAPI service
-├── app/
-│   ├── main.py               App entrypoint, CORS, router registration
-│   ├── api/routes/            HTTP route handlers
-│   ├── services/                Image preprocessing / YOLO11 inference / aggregation
-│   ├── models/                   Pydantic request/response schemas
-│   └── utils/                     Timing helper, typed errors
-├── tests/                    pytest tests
+ai-service/                   Python FastAPI service
+├── app/                        main.py, config, routes, services, schemas
+├── tests/                      pytest suite (32 tests)
+├── Dockerfile                  CPU-only image for Hugging Face Spaces / Docker hosts
+├── hf-space-README.md          Space metadata (rename to README.md in the Space)
 └── requirements.txt
 
-docs/                        Architecture, methodology, and synopsis documentation
-├── project-synopsis.md
-├── ai-pipeline.md
-├── progress-monitoring.md
-├── delay-prediction.md
-├── reporting.md
-└── screenshots/
-
-.env.example                 Root environment variable reference
+docs/                         Synopsis, methodology, deployment guide, figures
+.env.example                  Environment variable reference
 ```
 
 ## Getting Started
@@ -242,17 +217,17 @@ docs/                        Architecture, methodology, and synopsis documentati
 
 - Node.js 20+ and npm
 - Python 3.10+
-- A PostgreSQL database (local, or hosted)
-- A Supabase project (for Storage)
+- A PostgreSQL database (local or hosted)
+- A Supabase project (for image storage)
 
 ### Installation
 
 ```bash
-# Frontend / backend (Next.js app)
+# Web application
 cd web
-npm install
+npm install            # also generates the Prisma Client
 
-# AI service (Python)
+# AI service
 cd ../ai-service
 python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
@@ -261,26 +236,22 @@ pip install -r requirements.txt
 
 ### Environment Variables
 
-Copy the root example and fill in real values in `web/.env` (never commit real credentials):
-
 ```bash
-cp .env.example web/.env
+cp .env.example web/.env                  # web app
+cp ai-service/.env.example ai-service/.env  # AI service (optional)
 ```
 
-```env
-DATABASE_URL=
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-AI_SERVICE_URL=
-```
+| Variable | Used by | Purpose |
+|---|---|---|
+| `DATABASE_URL` | web | PostgreSQL connection string |
+| `NEXT_PUBLIC_SUPABASE_URL` | web | Supabase project URL (safe for the browser) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | web | Supabase anon key (safe for the browser) |
+| `SUPABASE_SERVICE_ROLE_KEY` | web | Server-side only — never exposed or committed |
+| `AI_SERVICE_URL` | web | Base URL of the AI service, e.g. `http://localhost:8000` |
+| `AI_SERVICE_API_KEY` | web | Optional; sent as `X-API-Key` to the AI service |
+| `SERVICE_API_KEY` | ai-service | Optional; when set, `/api/v1/analyze` requires the matching key |
 
-- `DATABASE_URL` — PostgreSQL connection string.
-- `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` — from your Supabase project settings; safe to expose to the browser.
-- `SUPABASE_SERVICE_ROLE_KEY` — server-side only; never exposed to the browser or committed.
-- `AI_SERVICE_URL` — base URL of the running AI service (e.g. `http://localhost:8000` in local development).
-
-A Supabase Storage bucket named exactly `construction-images` must also exist (created manually in the Supabase dashboard), kept **private** — images are served only via short-lived signed URLs.
+A Supabase Storage bucket named exactly `construction-images` must exist and be **private**.
 
 ### Database Setup
 
@@ -324,7 +295,7 @@ source .venv/bin/activate
 uvicorn app.main:app --reload --port 8000
 ```
 
-The interactive API docs are then available at `http://localhost:8000/docs`.
+Interactive API docs: `http://localhost:8000/docs`.
 
 ### Running the Application
 
@@ -334,6 +305,10 @@ npm run dev
 ```
 
 Open `http://localhost:3000`.
+
+## Deployment
+
+The project deploys on free tiers — **Vercel** (web app), **Supabase** (PostgreSQL + storage) and a **Hugging Face Space** (YOLO11 service in Docker; too large for serverless functions). In Vercel, set the Root Directory to `web`; the `vercel-build` script runs `prisma generate`, `prisma migrate deploy` and `next build`. Step-by-step instructions, including environment variables and pre-demo checks, are in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ## API Overview
 
@@ -355,6 +330,7 @@ All routes return a consistent JSON envelope: `{ "success": true, "data": ... }`
 | `DELETE` | `/api/images/:id` | Delete an image (storage object + database record). |
 | `GET` | `/api/analysis?constructionImageId=` | Get the current AI-analysis status/result for one image. |
 | `POST` | `/api/analysis` | Run YOLO11 analysis on an already-uploaded image. |
+| `POST` | `/api/delay` | Per-record baseline delay estimate (deviation-only). |
 | `GET` | `/api/delay-prediction?projectId=` | Get the current delay prediction and schedule risk assessment for a project. |
 | `GET` | `/api/reports?projectId=` | List reports (optionally scoped to a project). |
 | `POST` | `/api/reports` | Generate a new report (`{ "projectId": "..." }` — no other field is accepted). |
@@ -363,18 +339,16 @@ All routes return a consistent JSON envelope: `{ "success": true, "data": ... }`
 
 ## Testing
 
-The following commands were run against the final implementation:
-
 ```text
-npm run test                    → 61/61 passing
+npm test                        → 61/61 passing   (web: analytics, delay prediction, risk, reports, PDF)
 npx tsc --noEmit                → 0 errors
-npx eslint .                    → 0 errors
-npm run build                   → passed
-pytest -q                       → 32/32 passing
-python -m compileall app tests  → passed
+npm run lint                    → 0 errors
+npm run build                   → passes
+npm run evaluate                → reproduces the evaluation tables
+pytest -q                       → 32/32 passing   (AI service, incl. end-to-end YOLO11 inference)
 ```
 
-Frontend/backend logic (progress analytics, delay prediction, risk scoring, report composition, PDF generation) is covered by `node:test` unit tests co-located with the code under `web/lib/`. The AI service is covered by `pytest` under `ai-service/tests/`.
+Web unit tests (`node:test`) are co-located with the code under `web/lib/`; AI-service tests live in `ai-service/tests/`.
 
 ## Security Considerations
 
@@ -383,28 +357,56 @@ Frontend/backend logic (progress analytics, delay prediction, risk scoring, repo
 - Construction images are stored in a private Supabase Storage bucket and served only via short-lived signed URLs, never a permanent public link.
 - Uploaded files are validated server-side by content (magic-byte sniffing), not by trusted filename/`Content-Type`.
 - API error responses follow one consistent, generic envelope — internal errors (database, unexpected exceptions) never leak stack traces, SQL details, or filesystem paths to the client.
+- When publicly hosted, the AI service can require a shared `X-API-Key`; the key lives only in server-side environment variables.
 
 ## Known Limitations
 
-- **No authentication or multi-tenancy** — the system currently operates as a single-tenant application; this is a deliberate, documented scope decision, not an oversight.
-- **PDF export is text/table-based** — it does not embed the progress chart; embedding charts reliably in the current PDF pipeline was judged not worth the added complexity for this project's scope.
-- **No formal ML accuracy benchmark** — YOLO11 is used as a general-purpose, pretrained detector; no construction-specific precision/recall evaluation has been performed.
-- **Delay probability is a heuristic, not a statistical model** — it is a documented, deterministic weighting of schedule variance, velocity, and trend, not a model fitted to historical construction-outcome data (no such dataset exists for this project).
-- **Prisma CLI generation/validation** can depend on network access to Prisma's binary distribution servers in some development environments; this does not affect the application's runtime behavior once the Prisma Client is generated.
+- **No authentication or multi-tenancy** — single-tenant by design for this project's scope (see Future Scope).
+- **PDF export is text/table-based** — it does not embed the progress chart.
+- **No construction-specific detection benchmark** — YOLO11 is a general-purpose COCO-pretrained detector; no construction precision/recall evaluation has been performed.
+- **Risk weights are reasoned, not fitted** — the evaluation demonstrates consistency and robustness, not forecast accuracy; no outcome dataset of completed projects exists yet.
+- **Velocity is a two-point linear rate** — it does not model learning curves, weather or resource changes.
 
 ## Future Scope
 
-- Authentication and multi-user, multi-tenant access control.
+- Authentication and multi-user, multi-organisation access control — started as **BuildBridge**, a multi-tenant evolution with organisations, roles, invitations and a tower → floor → stage progress model.
 - Richer PDF reports with embedded charts.
-- Evaluation against a broader, labeled construction-image dataset, and a formal detection-accuracy benchmark.
-- A statistically fitted delay-prediction model, once sufficient historical outcome data exists.
-- Notifications/alerts for newly at-risk projects.
+- A labelled construction-image dataset, a formal detection benchmark and a construction-specific model (the detector already sits behind an adapter interface).
+- Calibrating the risk weights, or fitting a statistical delay model, once completed-project outcome data is available.
+- Automated alerts when a project enters a higher risk band.
 - Integration with external project-management tools.
 
-## Project Status
+## Screenshots
 
-The system is feature-complete for its defined scope: project and progress management, construction image handling, YOLO11-based computer-vision analysis, progress analytics, delay prediction, risk analysis, and automated web/PDF reporting are all implemented, tested, and integrated end-to-end.
+The screenshots below are the recommended, minimal set to demonstrate the complete workflow — they are not yet included in this repository and need to be captured from a running instance with representative demo data (see [Getting Started](#getting-started)). Once captured, save each file at the path shown and it will render inline.
 
-## License
+| Screenshot | Path | What it should show |
+|---|---|---|
+| Dashboard | `docs/screenshots/01-dashboard.png` | Portfolio stat cards (total/active projects, average completion, at-risk count) and the recent-projects table, populated with real project data. |
+| Projects list | `docs/screenshots/02-projects-list.png` | The project cards/table with meaningful names, statuses, and completion values. |
+| Project detail | `docs/screenshots/03-project-detail.png` | Project header/info plus navigation into progress, images, AI analysis, delay prediction, and reports. |
+| Progress tracking | `docs/screenshots/04-progress-tracking.png` | Progress KPI cards, the planned-vs-actual chart, and the historical progress table. |
+| Construction images | `docs/screenshots/05-construction-images.png` | The image gallery with upload dates and analysis status, in a populated (non-empty) state. |
+| AI analysis | `docs/screenshots/06-ai-analysis.png` | A completed analysis result — detected objects, confidence values, and the "visual evidence only" labeling. |
+| Delay prediction | `docs/screenshots/07-delay-prediction.png` | Estimated completion date, predicted delay, data-sufficiency label, and supporting KPI cards. |
+| Risk analysis | `docs/screenshots/08-risk-analysis.png` | The schedule risk score, its risk band, and the factor-level explanations. |
+| Reports list | `docs/screenshots/09-reports-list.png` | The generated-reports table with title, generation date, and View/Download actions. |
+| Report detail | `docs/screenshots/10-report-detail.png` | Enough of the web report (header through methodology/limitations) to show it is a complete, professional document. |
+| PDF report | `docs/screenshots/11-pdf-report.png` | The actual exported PDF file opened in a PDF viewer — not a screenshot of the HTML report. |
 
-This project was developed as an academic minor project. No open-source license has been applied; all rights are retained by the author unless a license is added.
+See [`docs/screenshots/README.md`](docs/screenshots/README.md) for the full naming convention and capture notes.
+
+## Documentation
+
+| Document | Contents |
+|---|---|
+| [`docs/project-synopsis.md`](docs/project-synopsis.md) | Abstract, problem statement, objectives, scope, stack, current status |
+| [`docs/ai-pipeline.md`](docs/ai-pipeline.md) | Computer-vision pipeline and what YOLO11 can and cannot claim |
+| [`docs/progress-monitoring.md`](docs/progress-monitoring.md) | Progress analytics methodology |
+| [`docs/delay-prediction.md`](docs/delay-prediction.md) | Delay prediction and risk-score formulas, with a worked example |
+| [`docs/reporting.md`](docs/reporting.md) | Report architecture and PDF export |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Free-tier cloud deployment guide |
+
+## Acknowledgment
+
+Developed by Team 54 under the guidance of **Dr. Seema Kalonia**, Department of Information Technology, Maharaja Agrasen Institute of Technology, Delhi.

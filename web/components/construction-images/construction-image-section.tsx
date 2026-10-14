@@ -16,10 +16,12 @@ export function ConstructionImageSection({
   projectId,
   projectName,
   initialImages,
+  progressRecords = [],
 }: {
   projectId: string;
   projectName: string;
   initialImages: ConstructionImageSummary[];
+  progressRecords?: { id: string; recordDate: string; actualProgress: number | null }[];
 }) {
   const [images, setImages] = useState(initialImages);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -70,6 +72,7 @@ export function ConstructionImageSection({
         onOpenChange={setUploadOpen}
         projectId={projectId}
         onUploaded={handleUploaded}
+        progressRecords={progressRecords}
       />
 
       <ImageViewerDialog

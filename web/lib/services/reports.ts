@@ -70,7 +70,7 @@ export async function generateReport(input: GenerateReportInput) {
   // JS rather than via Prisma's `.aggregate()` — the sandbox's hand-patched
   // generated client (see docs/ai-pipeline.md) doesn't cover aggregate
   // input types, and re-patching it further isn't warranted for a single
-  // average (see Prompt 7's explicit rule against unnecessary client
+  // average (see the reporting module's explicit rule against unnecessary client
   // patching).
   const completedAnalyses = await prisma.aIAnalysis.findMany({
     where: { status: "COMPLETED", constructionImage: { projectId: input.projectId } },

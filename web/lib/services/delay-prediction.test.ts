@@ -74,7 +74,7 @@ test("insufficient data: single actual-bearing record still surfaces real varian
   assert.equal(result.status, "INSUFFICIENT_DATA");
   assert.equal(result.dataSufficiency, "INSUFFICIENT");
   assert.equal(result.usableRecordCount, 1);
-  // Real, non-fabricated partial data must still be exposed per the prompt's
+  // Real, non-fabricated partial data must still be exposed per the design's
   // "insufficient" UI requirement (latest progress/planned/variance/count).
   assert.equal(result.latestActualProgress, 5);
   assert.equal(result.latestPlannedProgress, 0);

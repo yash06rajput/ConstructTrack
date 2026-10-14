@@ -13,7 +13,7 @@ import type { ReportAiAnalysis, ReportImageSummary } from "@/lib/reports/types";
  * The two report-only analytics pieces that don't already exist elsewhere
  * (image-status counts and an aggregated AI object-count table). Progress
  * analytics and delay prediction are NOT recomputed here — report-builder.ts
- * calls the existing Prompt 5/6 engines directly. Pure, no Prisma/Next
+ * calls the existing progress-analytics and delay-prediction engines directly. Pure, no Prisma/Next
  * imports, independently testable.
  */
 export interface ReportImageInput {

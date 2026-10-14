@@ -1,9 +1,9 @@
 # Automated Construction Progress & Risk Reporting
 
-This document describes the reporting system added in Prompt 7: a
+This document describes the reporting system of ConstructTrack: a
 server-generated, structured report that turns a project's already-real
 data — progress records, construction images, YOLO11 detections, and the
-Prompt 5/6 analytics engines — into a professional web report and PDF
+progress-analytics and delay-prediction engines — into a professional web report and PDF
 export. It never computes a new metric; it composes existing ones.
 
 ## Architecture
@@ -25,16 +25,16 @@ lib/
 │   │                         assembles the full ReportData
 │   └── reports.ts          — Prisma-backed data collection + persistence
 │                              (generateReport, listReports, listAllReports,
-│                              getReportById) — extends the existing Prompt 1
+│                              getReportById) — extends the existing initial
 │                              stub rather than adding a parallel file
 ├── serializers/report.ts   — Report row -> JSON-safe API/UI shape
 └── validation/report.ts    — generateReportSchema ({ projectId } only)
 ```
 
-This mirrors the separation the prompt asked for: **data collection**
+This keeps a clear separation between **data collection**
 (`reports.ts`, via `getProjectOrThrow`/`listImages` — already-existing
 services, not re-queried from scratch), **analytics** (the untouched
-Prompt 5/6 engines, plus `report-analytics.ts` for the two pieces that
+progress-analytics and delay-prediction engines, plus `report-analytics.ts` for the two pieces that
 don't already exist), **composition** (`report-builder.ts`, pure and unit
 tested), and **presentation** (`components/reports/report-view.tsx` for
 the web, `lib/reports/pdf.ts` for the PDF).
@@ -51,7 +51,7 @@ Every value in a report comes from one of:
   `listImages()`/`toImageSummary()`.
 - A small, dedicated `AIAnalysis` query (model version + average
   confidence across completed analyses) — the only new database query
-  this prompt added, since that aggregate wasn't already exposed anywhere.
+  the reporting module added, since that aggregate wasn't already exposed anywhere.
 
 No value is ever invented. Every "unavailable" case renders the literal
 text **"Data unavailable"** / **"Insufficient data"** rather than a
@@ -96,12 +96,12 @@ stays unused: the PDF is rendered on demand from the stored `reportData`
 snapshot (`GET /api/reports/[id]/pdf`) rather than pre-generated and
 uploaded to storage, which avoids storing a duplicate binary per report.
 
-`createReportSchema`/`createReport()` — the Prompt 1 stub that let a
+`createReportSchema`/`createReport()` — the initial stub that let a
 client submit `reportData` directly — was replaced with
 `generateReportSchema` (`{ projectId }` only) and `generateReport()`,
 which computes everything server-side. This is a deliberate, necessary
 change to that stub (it was explicitly marked "foundation only" for a
-later prompt), not a rewrite of working architecture.
+later phase), not a rewrite of working architecture.
 
 ## API endpoints
 
@@ -132,7 +132,7 @@ B.Tech project). The web report's Recharts chart is therefore the primary
 place to see the progress chart visually; the PDF instead presents that
 same data as the Historical Progress table, which every number in the
 chart also appears in. This is the "prioritize a reliable textual/table
-report ... document the limitation" fallback the prompt explicitly
+report ... document the limitation" fallback the design explicitly
 allows.
 
 ## UI
@@ -142,7 +142,7 @@ allows.
 - `/reports/[id]` — the full report view, with Print and Download PDF
   actions.
 - Project detail page (`/projects/[id]`) — a "Reports" section (replacing
-  the Prompt 1-5 placeholder) listing that project's reports with a
+  the earlier placeholder) listing that project's reports with a
   "Generate Report" button; generation needs no manual input.
 - Print styles (`app/globals.css`): app chrome (sidebar/header) hidden via
   a `.no-print` utility class; cards/table rows avoid splitting across a
@@ -152,12 +152,12 @@ allows.
 
 The client can only ever submit a `projectId`. Every computed value
 (progress, AI evidence, delay prediction, risk score) is read from the
-database and passed through the existing, unmodified Prompt 5/6 engines
+database and passed through the existing, unmodified progress-analytics and delay-prediction engines
 server-side. No Supabase service-role key, database credentials,
 filesystem paths, or Python-service internals are exposed by any report
 endpoint.
 
-**Prompt 8 hardening note:** `GET /api/reports/[id]/pdf` originally only
+**Hardening note:** `GET /api/reports/[id]/pdf` originally only
 mapped errors from the report lookup through the standard
 `{success:false,error:{code,message}}` envelope — a failure inside PDF
 rendering itself (`generateReportPdf`) was left uncaught, which would have
@@ -194,9 +194,9 @@ near-empty (insufficient-data) report.
 
 Not implemented: Prisma-backed API route integration tests (valid/missing/
 invalid project ID) — this project's existing test setup (`node:test` via
-`tsx`) has never included a database-backed test harness in any prior
-prompt, and introducing one (a test database, request mocking) for this
-prompt alone would be disproportionate scope for a B.Tech minor project.
+`tsx`) has never included a database-backed test harness so
+far, and introducing one (a test database, request mocking) for this
+module alone would be disproportionate scope for a B.Tech minor project.
 Route-level correctness was instead verified via `tsc`/`eslint`/manual
 review of the (thin) route handlers, which do nothing but validate input
 and delegate to the already-unit-tested service/builder functions.

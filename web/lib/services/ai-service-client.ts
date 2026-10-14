@@ -57,7 +57,13 @@ export async function analyzeConstructionImage(
   try {
     response = await fetch(`${baseUrl}/api/v1/analyze`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        // Optional shared secret for a publicly hosted AI service.
+        ...(process.env.AI_SERVICE_API_KEY
+          ? { "X-API-Key": process.env.AI_SERVICE_API_KEY }
+          : {}),
+      },
       body: JSON.stringify({
         image_url: input.imageUrl,
         image_id: input.imageId,

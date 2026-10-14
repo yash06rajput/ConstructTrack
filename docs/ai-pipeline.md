@@ -1,7 +1,6 @@
-# AI pipeline (Prompt 4)
+# AI pipeline
 
-This document explains the real computer-vision pipeline added in Prompt
-4, and — just as importantly for academic honesty — what it does and does
+This document explains the real computer-vision pipeline implemented in the AI service, and — just as importantly for academic honesty — what it does and does
 not claim to do.
 
 ## Pipeline
@@ -68,7 +67,7 @@ specific fine-tuning exists yet. Concretely, this pipeline does not, and
 must not be read to, produce:
 
 - A construction **completion percentage** (e.g. "73% complete"). The
-  `AIAnalysis.completionPercentage` column from Prompt 1 is kept (nullable)
+  `AIAnalysis.completionPercentage` column from the initial schema is kept (nullable)
   for schema continuity but is intentionally left `null` — computing it
   from generic object counts would be scientifically unjustified.
 - **Delay prediction** — that remains the separate, transparent rule-based

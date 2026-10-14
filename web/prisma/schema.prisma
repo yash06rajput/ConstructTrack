@@ -2,7 +2,7 @@
 // and Delay Prediction System.
 //
 // Design notes (for viva explainability):
-// - User: a project manager / system user (no auth implemented yet — Prompt 1 scope).
+// - User: a project manager / system user (authentication is out of current scope).
 // - Project: a construction project being tracked.
 // - ProgressRecord: one periodic (weekly/monthly) planned-vs-actual observation.
 // - ConstructionImage: a site photo uploaded for a project, optionally tied to a
@@ -22,8 +22,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// A project manager / system user. Authentication is out of scope for this
-/// prompt; this model exists so Projects have a clear owner from day one.
+/// A project manager / system user. Authentication is out of scope for the current
+/// system; this model exists so Projects have a clear owner from day one.
 model User {
   id        String   @id @default(cuid())
   name      String
@@ -139,7 +139,7 @@ model ConstructionImage {
 /// upserted on every analysis run (re-analyzing replaces the previous
 /// result rather than accumulating duplicates).
 ///
-/// Prompt 4 schema note: `completionPercentage` was defined in Prompt 1
+/// Schema note: `completionPercentage` was defined in the initial schema
 /// anticipating a construction-progress estimate, but the generic
 /// pretrained YOLO11 model used here cannot honestly produce one (see
 /// docs/ai-pipeline.md) — it is made nullable and intentionally left null
@@ -164,7 +164,7 @@ model AIAnalysis {
   processingTimeMs      Int?
   errorMessage          String? // set when status = FAILED; safe, human-readable
 
-  // Retained from Prompt 1. Construction-specific completion-percentage
+  // Retained from the initial schema. Construction-specific completion-percentage
   // estimation requires a domain-trained model that does not exist yet —
   // this stays null. Never populate it from a generic object-detection
   // result.

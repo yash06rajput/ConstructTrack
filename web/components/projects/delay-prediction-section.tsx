@@ -39,7 +39,7 @@ import type { ConstructionImageSummary } from "@/lib/serializers/image";
  * Everything shown here is computed CLIENT-SIDE, on render, by the same
  * pure, deterministic engine (lib/services/delay-prediction.ts) that
  * GET /api/delay-prediction uses server-side — this mirrors the existing
- * `ProgressKpiCards`/`computeProgressSummary` pattern (Prompt 5) rather
+ * `ProgressKpiCards`/`computeProgressSummary` pattern rather
  * than adding a second network round-trip, and keeps this section in sync
  * automatically with the real `progressRecords`/`images` already rendered
  * on this page. The API route remains the server-authoritative contract

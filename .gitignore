@@ -19,6 +19,10 @@ web/.env.*
 ai-service/.env
 ai-service/.env.*
 
+# ...but keep the documented templates
+!.env.example
+!**/.env.example
+
 # YOLO model weights
 ai-service/models/*.pt
 

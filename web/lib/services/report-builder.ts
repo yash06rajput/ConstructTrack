@@ -33,7 +33,7 @@ function sortByDateAsc(records: ProgressSnapshot[]): ProgressSnapshot[] {
  * data. This is the "report composition" layer: it never queries the
  * database itself (see lib/services/reports.ts for that) and never
  * computes a schedule/risk formula itself — every analytical number comes
- * from the existing Prompt 5/6 engines (computeProgressSummary,
+ * from the existing progress-analytics and delay-prediction engines (computeProgressSummary,
  * computeDelayPrediction) or the report-only aggregations in
  * report-analytics.ts. Pure and deterministic given the same inputs.
  */

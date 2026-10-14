@@ -7,6 +7,7 @@ import type { ReportData } from "@/lib/reports/types";
 
 // pdfkit needs Node APIs (Buffer/streams) — explicit, not the Edge runtime.
 export const runtime = "nodejs";
+export const maxDuration = 30;
 
 /**
  * GET /api/reports/[id]/pdf — streams a PDF built from the report's

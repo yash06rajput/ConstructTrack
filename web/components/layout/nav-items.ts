@@ -14,9 +14,9 @@ export interface NavItem {
 
 /**
  * Primary navigation for the application shell.
- * Pages are placeholders in this prompt — full functionality
- * (dashboard widgets, project CRUD, report generation) is built
- * in later prompts.
+ * Each item maps to a fully implemented page: the portfolio
+ * dashboard, project management (CRUD, progress, images, analytics,
+ * delay prediction) and generated reports.
  */
 export const NAV_ITEMS: NavItem[] = [
   {

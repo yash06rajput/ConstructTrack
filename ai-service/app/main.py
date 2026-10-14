@@ -1,8 +1,11 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+import secrets
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.api.routes import api_router
 from app.config import settings
@@ -51,6 +54,28 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+
+@app.middleware("http")
+async def require_api_key(request: Request, call_next):
+    """Enforce the optional shared secret on analysis endpoints."""
+    expected = settings.service_api_key
+    path = request.url.path
+    if (
+        expected
+        and path.startswith(settings.api_v1_prefix)
+        and not path.endswith("/health")
+        and request.method != "OPTIONS"
+    ):
+        provided = request.headers.get("x-api-key", "")
+        if not secrets.compare_digest(provided, expected):
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Missing or invalid API key."},
+            )
+    return await call_next(request)
+
 
 app.include_router(api_router, prefix=settings.api_v1_prefix)
 

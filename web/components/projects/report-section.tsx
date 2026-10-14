@@ -13,7 +13,7 @@ import type { ReportListItem } from "@/lib/serializers/report";
 
 /**
  * Project-scoped "Reports" section for the project detail page — replaces
- * the Prompt 1-5 placeholder. Generation needs no manual input beyond the
+ * the earlier placeholder. Generation needs no manual input beyond the
  * project itself (see lib/services/reports.ts's generateReport()); this
  * component just triggers it and refreshes the list.
  */

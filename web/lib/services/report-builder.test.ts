@@ -42,7 +42,7 @@ const RECORDS = [
   { id: "r2", recordDate: "2026-01-21", plannedProgress: 45, actualProgress: 40, deviation: -5, status: "AT_RISK" as const, notes: null },
 ];
 
-test("buildReportData: delay prediction is byte-for-byte the same object the Prompt 6 engine produces (no reimplementation)", () => {
+test("buildReportData: delay prediction is byte-for-byte the same object the project-level delay engine produces (no reimplementation)", () => {
   const report = buildReportData({
     project: BASE_PROJECT,
     records: RECORDS,
@@ -59,7 +59,7 @@ test("buildReportData: delay prediction is byte-for-byte the same object the Pro
   assert.deepEqual(report.executiveSummary.prediction, direct);
 });
 
-test("buildReportData: progress analytics is byte-for-byte the same object the Prompt 5 engine produces", () => {
+test("buildReportData: progress analytics is byte-for-byte the same object the progress-analytics engine produces", () => {
   const report = buildReportData({
     project: BASE_PROJECT,
     records: RECORDS,

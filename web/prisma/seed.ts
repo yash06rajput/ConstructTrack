@@ -1,8 +1,8 @@
 /**
  * Development/demo seed data.
  *
- * This is NOT production data. It exists purely so the dashboard (built in
- * a later prompt) has realistic-looking projects and progress history to
+ * This is NOT production data. It exists purely so the dashboard (the portfolio
+ * dashboard) has realistic-looking projects and progress history to
  * render immediately. Run with: npx prisma db seed
  */
 import { PrismaClient } from "@prisma/client";
@@ -23,8 +23,10 @@ interface SeedProject {
   location: string;
   startDate: Date;
   expectedEndDate: Date;
-  // [plannedProgress, actualProgress][] — one entry per week, from project start.
-  weeklyProgress: [number, number][];
+  // [weekNumber, plannedProgress, actualProgress][] — weekNumber counts
+  // from the project start date. Planned values follow the project's own
+  // timeline, so progress, delay prediction and risk all stay consistent.
+  progress: [number, number, number][];
 }
 
 async function main() {
@@ -39,9 +41,10 @@ async function main() {
     },
   });
 
+  // Dates are relative to "today" so the demo always shows recent history.
   const today = new Date();
-  const projectStart = new Date(today);
-  projectStart.setDate(projectStart.getDate() - 21); // 3 weeks of history
+  today.setUTCHours(0, 0, 0, 0);
+  const weeksAgo = (weeks: number) => weeksAfter(today, -weeks);
 
   const seedProjects: SeedProject[] = [
     {
@@ -49,39 +52,56 @@ async function main() {
       description:
         "8-storey commercial office building with basement parking, steel-and-glass facade.",
       location: "Sector 62, Noida",
-      startDate: projectStart,
-      expectedEndDate: weeksAfter(projectStart, 40),
-      // Falling behind: a realistic AT_RISK / DELAYED trend.
-      weeklyProgress: [
-        [20, 18],
-        [35, 32],
-        [50, 44],
+      startDate: weeksAgo(20),
+      expectedEndDate: weeksAfter(weeksAgo(20), 40),
+      // Slipping steadily behind plan -> HIGH schedule risk.
+      progress: [
+        [4, 8, 8],
+        [8, 18, 16],
+        [12, 29, 25],
+        [16, 40, 33],
+        [20, 50, 40],
       ],
     },
     {
       name: "Residential Tower",
       description: "22-floor residential tower, 4 apartments per floor, RCC framed structure.",
       location: "Baner, Pune",
-      startDate: projectStart,
-      expectedEndDate: weeksAfter(projectStart, 60),
-      // Roughly on track.
-      weeklyProgress: [
-        [12, 12],
-        [24, 23],
-        [36, 35],
+      startDate: weeksAgo(16),
+      expectedEndDate: weeksAfter(weeksAgo(16), 60),
+      // Roughly on plan -> LOW risk.
+      progress: [
+        [4, 6, 6],
+        [8, 13, 13],
+        [12, 20, 19],
+        [16, 27, 26],
       ],
     },
     {
       name: "Retail Complex",
       description: "Single-storey retail complex with 30 store units and a central atrium.",
       location: "Whitefield, Bengaluru",
-      startDate: projectStart,
-      expectedEndDate: weeksAfter(projectStart, 24),
-      // Ahead of schedule.
-      weeklyProgress: [
-        [15, 17],
-        [30, 34],
-        [45, 50],
+      startDate: weeksAgo(12),
+      expectedEndDate: weeksAfter(weeksAgo(12), 24),
+      // Ahead of plan -> projected to finish early.
+      progress: [
+        [4, 15, 17],
+        [8, 32, 36],
+        [12, 50, 56],
+      ],
+    },
+    {
+      name: "Metro Station Annex",
+      description: "Two-level station annex with concourse, ticketing hall and service rooms.",
+      location: "Dwarka, New Delhi",
+      startDate: weeksAgo(16),
+      expectedEndDate: weeksAfter(weeksAgo(16), 36),
+      // Work has nearly stalled -> CRITICAL risk.
+      progress: [
+        [4, 10, 9],
+        [8, 21, 18],
+        [12, 33, 22],
+        [16, 44, 23],
       ],
     },
   ];
@@ -93,7 +113,11 @@ async function main() {
         // for idempotent re-seeding by looking it up first.
         id: (await prisma.project.findFirst({ where: { name: seedProject.name } }))?.id ?? "__none__",
       },
-      update: {},
+      // Re-seeding refreshes the schedule so the demo data stays current.
+      update: {
+        startDate: seedProject.startDate,
+        expectedEndDate: seedProject.expectedEndDate,
+      },
       create: {
         name: seedProject.name,
         description: seedProject.description,
@@ -105,9 +129,12 @@ async function main() {
       },
     });
 
-    for (let week = 0; week < seedProject.weeklyProgress.length; week++) {
-      const [plannedProgress, actualProgress] = seedProject.weeklyProgress[week];
-      const recordDate = weeksAfter(seedProject.startDate, week + 1);
+    // Replace this project's progress history (and the delay predictions
+    // derived from it) so re-running the seed never duplicates records.
+    await prisma.progressRecord.deleteMany({ where: { projectId: project.id } });
+
+    for (const [week, plannedProgress, actualProgress] of seedProject.progress) {
+      const recordDate = weeksAfter(seedProject.startDate, week);
       const deviation = computeDeviation(plannedProgress, actualProgress);
       const status = computeProgressStatus(deviation);
 

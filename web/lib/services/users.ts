@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 
 /**
- * No authentication exists yet (deferred to a later prompt). Projects still
+ * No authentication exists yet (listed under future scope). Projects still
  * require a `managerId` in the schema, so until real accounts exist we
  * resolve a single demo "Project Manager" user — reusing whichever user the
  * seed script already created, or creating one on first use. This keeps

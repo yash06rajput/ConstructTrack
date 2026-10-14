@@ -78,11 +78,11 @@ export function estimateDelay({
 
 
 // ============================================================================
-// Prompt 6 — Analytical delay-prediction & schedule-risk engine
+// Analytical delay-prediction & schedule-risk engine
 // ============================================================================
 //
 // Everything below is a NEW, project-level analytical layer that sits
-// alongside (and does not replace) the Prompt 1 baseline above. The
+// alongside (and does not replace) the per-record baseline above. The
 // baseline (`estimateDelay`/`classifyRisk`) is a single-record, deviation-
 // proportional estimate and is still used by `lib/services/delay.service.ts`
 // (POST /api/delay) and `prisma/seed.ts` — it is left untouched for
@@ -125,7 +125,7 @@ export type SchedulePredictionStatus = "INSUFFICIENT_DATA" | "EARLY" | "ON_TRACK
 
 /**
  * Display-level risk band. Deliberately spelled "MODERATE" (matching this
- * prompt's UI contract) rather than the Prisma `RiskLevel` enum's "MEDIUM"
+ * UI contract) rather than the Prisma `RiskLevel` enum's "MEDIUM"
  * — this engine's result is not persisted through that model (see the
  * persistence-decision note in docs/delay-prediction.md), so there is no
  * enum collision to reconcile.
@@ -426,7 +426,7 @@ export function computeDelayPrediction(
     };
   }
 
-  // --- Velocity (reuses Prompt 5's real-elapsed-time trend logic) -------
+  // --- Velocity (reuses the progress-analytics module's real-elapsed-time trend logic) -------
   const trend = computeProgressTrend(scoped);
   const averageWeeklyProgress = trend.available ? trend.averageGainPerWeek : null;
   const averageDailyProgress = averageWeeklyProgress !== null ? round(averageWeeklyProgress / 7, 3) : null;
@@ -573,7 +573,7 @@ export function computeDelayPrediction(
     },
     aiEvidenceNote: null,
     methodology:
-      `Analytical velocity-based projection (Prompt 6): schedule variance and progress velocity are computed from ` +
+      `Analytical velocity-based projection: schedule variance and progress velocity are computed from ` +
       `${usableRecordCount} actual-bearing progress records (${dataSufficiency.toLowerCase()} data sufficiency) spanning real ` +
       `elapsed calendar time. Risk score and delay probability are deterministic weighted combinations of documented factors. ` +
       `See docs/delay-prediction.md for the full methodology and worked example.`,

@@ -35,7 +35,7 @@ export interface ReportExecutiveSummary {
   trendAvailable: boolean;
   trendReason: string | null;
   averageGainPerWeek: number | null;
-  /** The full, verbatim Prompt 6 engine result — never re-derived here. */
+  /** The full, verbatim project-level delay engine result — never re-derived here. */
   prediction: DelayPredictionResult;
 }
 
@@ -53,7 +53,7 @@ export interface ReportProjectOverview {
 }
 
 export interface ReportProgressAnalytics {
-  /** The exact Prompt 5 ProgressSummary — includes current + trend. */
+  /** The exact progress-analytics ProgressSummary — includes current + trend. */
   current: ProgressSummary;
   history: ProgressSnapshot[];
 }

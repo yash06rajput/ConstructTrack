@@ -1,4 +1,4 @@
-# Progress monitoring (Prompt 5)
+# Progress monitoring
 
 This document explains the Construction Progress Monitoring and
 Historical Comparison module: what it measures, how each number is
@@ -13,7 +13,7 @@ never blended into a single fabricated number:
 1. **Recorded project progress** (`ProgressRecord`) — a person enters a
    planned % and, once measured, an actual % for a given date. This is the
    **authoritative** progress measurement in this system.
-2. **AI visual evidence** (`AIAnalysis`, from Prompt 4's real YOLO11
+2. **AI visual evidence** (`AIAnalysis`, from the real YOLO11
    pipeline) — real object detections on uploaded site photos. This is
    **supporting evidence only**: a factual record of what the model
    actually recognized in a photo, never converted into a completion
@@ -21,13 +21,13 @@ never blended into a single fabricated number:
 
 ## Planned vs. actual
 
-`lib/services/progress.ts` (existing since Prompt 1) computes, per record:
+`lib/services/progress.ts` (part of the initial data model) computes, per record:
 
 ```
 deviation = actualProgress - plannedProgress
 ```
 
-`lib/services/progress-analytics.ts` (new in Prompt 5) computes the
+`lib/services/progress-analytics.ts` computes the
 project-level KPIs shown at the top of the project detail page from the
 **most recent** `ProgressRecord` by date (not by insertion order):
 
@@ -36,7 +36,7 @@ project-level KPIs shown at the top of the project detail page from the
   0) when `actualProgress` hasn't been recorded yet for that date, shown
   in the UI as "Actual progress not yet recorded" rather than a fake 0%.
 - `status` — one of `AHEAD` / `ON_TRACK` / `AT_RISK` / `DELAYED`, using the
-  same documented thresholds Prompt 1 already established
+  same documented thresholds established
   (`PROGRESS_STATUS_THRESHOLDS` in `lib/services/progress.ts`:
   ahead ≥ +3 points, at-risk ≤ -3 points, delayed ≤ -10 points). The KPI
   card presents these with the more explicit labels "Ahead of Plan / On
@@ -72,7 +72,7 @@ calculation, insufficient-data handling, and out-of-order input).
 ## AI evidence: what YOLO11 can and cannot tell you
 
 `lib/services/ai-evidence.ts` operates only on **real, already-persisted**
-`AIAnalysis.objectCounts` from Prompt 4's genuine YOLO11 inference. It
+`AIAnalysis.objectCounts` from the genuine YOLO11 inference. It
 provides:
 
 - **Object detection counts over time** (`buildObjectCountHistory`) — a
@@ -94,7 +94,7 @@ provides:
   statistical basis.
 - Delay prediction, risk scores, or any forward-looking claim. Those stay
   entirely in the `deviation`-based `ProgressRecord` logic above (and will
-  extend into Prompt 6's delay-prediction module, which consumes the
+  extend into the delay-prediction module's delay-prediction module, which consumes the
   historical contract below — not the AI evidence).
 
 Every place this evidence appears in the UI (image comparison, detection
@@ -106,9 +106,9 @@ completion percentages."*
 ## Image-to-progress association
 
 `ConstructionImage.progressRecordId` (an optional foreign key to
-`ProgressRecord`) already existed in the schema since Prompt 1/3 — **no
-schema change was needed** for Prompt 5. The upload flow still doesn't
-force picking a progress record (Prompt 3's deliberate choice, preserved).
+`ProgressRecord`) already existed in the schema since the initial data model — **no
+schema change was needed** for the progress-analytics module. The upload flow still doesn't
+force picking a progress record (the image module's deliberate choice, preserved).
 Where the UI needs to relate an image to "when", it uses the image's own
 real `uploadedAt` timestamp directly (the timeline, comparison, and
 detection-trends views are all organized by upload date) rather than
@@ -126,9 +126,9 @@ could misattribute a photo to the wrong reporting period.
 > construction-stage or completion-percentage estimate. No such claim is
 > made anywhere in this system.
 
-## Contract prepared for Prompt 6 (delay prediction)
+## Contract consumed by delay prediction
 
-Prompt 6 can consume, per project, without needing any new schema or
+The delay-prediction module consumes, per project, without needing any new schema or
 service:
 
 ```
@@ -143,4 +143,4 @@ AIAnalysis evidence (optional, supporting only):
 ```
 
 No prediction algorithm, predicted completion date, delay probability, or
-risk score has been implemented in Prompt 5 — that is explicitly deferred.
+risk score has been implemented in the progress-analytics module — that is explicitly deferred.

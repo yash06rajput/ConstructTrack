@@ -66,6 +66,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         projectId={data.id}
         projectName={data.name}
         initialImages={imageSummaries}
+        progressRecords={data.progressRecords}
       />
 
       <ReportSection projectId={data.id} initialReports={reportSummaries} />

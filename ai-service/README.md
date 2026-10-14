@@ -5,7 +5,7 @@ preprocesses it with OpenCV, runs real YOLO11 (Ultralytics) object-
 detection inference, and returns structured, genuine detection results to
 the Next.js app.
 
-## Current status (Prompt 4 — real CV pipeline)
+## Current status
 
 - Full FastAPI app structure, CORS, and the `/api/v1/analyze` contract are
   implemented.
@@ -112,3 +112,8 @@ Deployed independently of the Next.js app (Railway or Render). Set
 `AI_SERVICE_URL` in the Next.js app's environment to this service's public
 URL once deployed. Make sure the checkpoint (`models/yolo11n.pt`) is either
 included in the deployment image or downloadable at startup.
+
+## Deployment and access control
+
+- `Dockerfile` builds a CPU-only image (PyTorch CPU wheels, `yolo11n.pt` baked in) that runs unchanged on a Hugging Face Space (Docker SDK, port 7860) or any Docker host (`$PORT`). See [`../docs/DEPLOYMENT.md`](../docs/DEPLOYMENT.md).
+- Set `SERVICE_API_KEY` to require an `X-API-Key` header on `/api/v1/analyze` when the service is publicly reachable. `/api/v1/health` stays open. Leave it unset for local development and tests.

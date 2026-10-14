@@ -1,7 +1,7 @@
 """
 Application configuration, loaded from environment variables.
 
-Prompt 4 adds the real YOLO11 model configuration. Centralizing it here
+Real YOLO11 model configuration. Centralizing it here
 means the model path/thresholds are never hardcoded/scattered elsewhere in
 the codebase (detector.py, image_analysis.py, tests) — everything reads
 from `settings`.
@@ -17,6 +17,12 @@ class Settings(BaseSettings):
 
     # CORS: allow the Next.js app to call this service directly in dev.
     allowed_origins: list[str] = ["http://localhost:3000"]
+
+    # Optional shared secret for public deployments (e.g. a Hugging Face
+    # Space). When set, every /api/v1/* request except /health must send it
+    # in the X-API-Key header; the Next.js app sends AI_SERVICE_API_KEY.
+    # Unset (the default, and in tests/local dev) means no key is required.
+    service_api_key: str | None = None
 
     # --- YOLO11 model configuration ---
     # A lightweight, genuinely-pretrained (COCO, 80 classes) Ultralytics

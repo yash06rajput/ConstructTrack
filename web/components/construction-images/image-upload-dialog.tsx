@@ -18,6 +18,8 @@ import { apiClient, ApiClientError } from "@/lib/api/client";
 import { ACCEPTED_IMAGE_INPUT_ACCEPT } from "@/lib/images/constants";
 import { createUploadQueueItem, runWithConcurrency, type UploadQueueItem } from "@/lib/images/upload-queue";
 import type { ConstructionImageSummary } from "@/lib/serializers/image";
+import { compressImageForUpload } from "@/lib/images/compress";
+import { formatDate, formatPercent } from "@/lib/format";
 
 const UPLOAD_CONCURRENCY = 3;
 
@@ -26,6 +28,8 @@ interface ImageUploadDialogProps {
   onOpenChange: (open: boolean) => void;
   projectId: string;
   onUploaded: (images: ConstructionImageSummary[]) => void;
+  /** Optional: lets the user link the uploaded images to one progress record. */
+  progressRecords?: { id: string; recordDate: string; actualProgress: number | null }[];
 }
 
 export function ImageUploadDialog({
@@ -33,8 +37,10 @@ export function ImageUploadDialog({
   onOpenChange,
   projectId,
   onUploaded,
+  progressRecords = [],
 }: ImageUploadDialogProps) {
   const [items, setItems] = useState<UploadQueueItem[]>([]);
+  const [progressRecordId, setProgressRecordId] = useState("");
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -50,6 +56,7 @@ export function ImageUploadDialog({
   function resetAndClose() {
     items.forEach((item) => URL.revokeObjectURL(item.previewUrl));
     setItems([]);
+    setProgressRecordId("");
     setUploading(false);
     onOpenChange(false);
   }
@@ -87,8 +94,9 @@ export function ImageUploadDialog({
     await runWithConcurrency(toUpload, UPLOAD_CONCURRENCY, async (item) => {
       try {
         const formData = new FormData();
-        formData.append("file", item.file);
+        formData.append("file", await compressImageForUpload(item.file));
         formData.append("projectId", projectId);
+        if (progressRecordId) formData.append("progressRecordId", progressRecordId);
         const image = await apiClient.postFormData<ConstructionImageSummary>(
           "/api/images",
           formData,
@@ -148,6 +156,31 @@ export function ImageUploadDialog({
             className="hidden"
             onChange={(event) => handleFilesSelected(event.target.files)}
           />
+
+          {progressRecords.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="progress-record-link" className="text-sm font-medium">
+                Link to progress record <span className="font-normal text-muted-foreground">(optional)</span>
+              </label>
+              <select
+                id="progress-record-link"
+                value={progressRecordId}
+                onChange={(event) => setProgressRecordId(event.target.value)}
+                disabled={uploading}
+                className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50"
+              >
+                <option value="">Not linked</option>
+                {[...progressRecords]
+                  .sort((a, b) => b.recordDate.localeCompare(a.recordDate))
+                  .map((record) => (
+                    <option key={record.id} value={record.id}>
+                      {formatDate(record.recordDate)}
+                      {record.actualProgress !== null ? ` — actual ${formatPercent(record.actualProgress)}` : ""}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
 
           <Button
             type="button"

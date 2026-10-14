@@ -10,7 +10,7 @@ A web-based system that tracks construction-site progress from real project data
 | **Institute** | Maharaja Agrasen Institute of Technology, Delhi (GGSIPU) |
 | **Team 54** | Ashish Upadhyay (06714803123) · Yash Rajput (06814803123) · Sahil Rao (07614803123) |
 | **Faculty guide** | Dr. Seema Kalonia |
-| **Live demo** | _add your Vercel URL here_ |
+| **Live demo** | https://construct-track-pi.vercel.app |
 
 ## Contents
 

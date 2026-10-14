@@ -1,4 +1,4 @@
-# Deploying ConstructTrack (Vercel + Supabase + Hugging Face)
+# Deploying ConstructTrack (Vercel + Supabase + self-hosted AI service)
 
 Free-tier deployment for a live demo. Total time: about 30–45 minutes, most
 of it waiting for builds.
@@ -7,12 +7,12 @@ of it waiting for builds.
 |---|---|---|
 | Next.js web app + API | **Vercel** | Native Next.js hosting |
 | PostgreSQL + image storage | **Supabase** | Free Postgres + private Storage bucket |
-| Python YOLO11 AI service | **Hugging Face Space** (Docker) | Free CPU with 16 GB RAM — PyTorch + YOLO11 is too large for Vercel functions |
+| Python YOLO11 AI service | **Self-hosted** (team machine or any Docker host) | PyTorch + YOLO11 is too large for Vercel functions; free Hugging Face Docker Spaces became paid in 2026 |
 
 ```text
 Browser ──► Vercel (Next.js UI + API routes) ──► Supabase Postgres (Prisma)
                      │                     └──► Supabase Storage (signed URLs)
-                     └──► Hugging Face Space (FastAPI + YOLO11)  [X-API-Key]
+                     └──► Self-hosted AI service (FastAPI + YOLO11)  [X-API-Key]
 ```
 
 ---
@@ -31,26 +31,29 @@ Browser ──► Vercel (Next.js UI + API routes) ──► Supabase Postgres (
    - `anon` public key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `service_role` key → `SUPABASE_SERVICE_ROLE_KEY` (server only — never share)
 
-## 2. AI service on Hugging Face Spaces — ~15 min (mostly build time)
+## 2. AI service (self-hosted)
 
-1. <https://huggingface.co/new-space> → SDK **Docker** → template **Blank** →
-   hardware **CPU basic (free)** → visibility Public.
-2. Upload these from `ai-service/` to the Space root (Files → Add file → Upload):
-   - `Dockerfile`
-   - `requirements.txt`
-   - the whole `app/` folder
-   - `hf-space-README.md`, **renamed to `README.md`** (replace the Space's default README)
-3. Space → Settings → **Variables and secrets** → New secret
-   `SERVICE_API_KEY` = any long random string (e.g. from
-   `openssl rand -hex 24`). Keep it; Vercel needs the same value.
-4. Wait for the build to show **Running**, then open
-   `https://<your-username>-<space-name>.hf.space/api/v1/health` — it should
-   return `model_loaded: true`. That base URL (no trailing slash) is
-   `AI_SERVICE_URL`.
+The web app works fully without the AI service (projects, progress, risk,
+reports, PDFs, and every previously stored analysis). To run new analyses:
 
-> Alternative: the same Dockerfile deploys unchanged on Render or Railway
-> (they set `$PORT` automatically). Render's free 512 MB instance is too
-> small for PyTorch; use a paid instance there.
+**Option A — local, results shared with the live site (recommended for demos).**
+Point `web/.env` at the same Supabase values as Vercel, then:
+
+```bash
+# terminal 1
+cd ai-service && source .venv/bin/activate
+uvicorn app.main:app --port 8000
+# terminal 2
+cd web && npm run dev       # AI_SERVICE_URL=http://localhost:8000
+```
+
+Analyse images at `http://localhost:3000`; results are written to Supabase and
+appear on the live Vercel site immediately.
+
+**Option B — make "Analyse" work on the live site.** Expose the local service
+with a tunnel (e.g. `ngrok http --url=<your-domain> 8000`) or run the
+`Dockerfile` on any Docker host, then set `AI_SERVICE_URL` (and optionally
+`AI_SERVICE_API_KEY`, matching the service's `SERVICE_API_KEY`) in Vercel.
 
 ## 3. Push the code to GitHub
 
@@ -73,8 +76,8 @@ git push
    | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
    | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service-role key |
-   | `AI_SERVICE_URL` | `https://<user>-<space>.hf.space` |
-   | `AI_SERVICE_API_KEY` | same value as the Space's `SERVICE_API_KEY` |
+   | `AI_SERVICE_URL` | *(optional, Option B only)* public URL of the AI service |
+   | `AI_SERVICE_API_KEY` | *(optional)* same value as the service's `SERVICE_API_KEY` |
 
 4. **Deploy.** The `vercel-build` script runs `prisma generate`,
    `prisma migrate deploy` (creates all tables in Supabase) and `next build`.
@@ -94,20 +97,21 @@ something meaningful to show). Re-running it is safe — it upserts.
 
 ## 6. Before the demo (do this the evening before)
 
-1. Open the Vercel URL → Projects → open the delayed project.
-2. Upload 2–3 real construction-site photos and click **Analyze** on each.
-   Results are saved in the database, so they display instantly during the
-   demo even if the AI service is asleep.
+1. Open the Vercel URL → Projects → open the delayed project and upload 2–3
+   construction-site photos.
+2. Start the AI service and `npm run dev` locally (section 2, Option A) and
+   click **Analyze** on each photo at `http://localhost:3000`. Results are
+   saved in Supabase, so they display on the live site at any time.
 3. Generate a report and download the PDF once.
-4. **5 minutes before presenting:** open the Space's `/api/v1/health` URL so
-   it is awake (free Spaces sleep after inactivity; the first request after
-   sleeping takes ~1 minute).
+4. **Before presenting:** start the AI service again if you want to run a
+   live analysis, and check `http://localhost:8000/api/v1/health` shows
+   `model_loaded: true`.
 
 ## Notes
 
 - Large phone photos are automatically downscaled in the browser (max
   2048 px, JPEG) before upload, so they stay under Vercel's 4.5 MB request
   limit. Small images upload untouched.
-- The analysis API route allows up to 60 s (`maxDuration`) to cover a
-  Space waking up.
+- The analysis API route allows up to 60 s (`maxDuration`) for slower or
+  remote AI-service hosts.
 - Never commit `.env` files or the service-role key.

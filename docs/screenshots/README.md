@@ -1,11 +1,8 @@
 # Screenshot assets
 
 This directory holds the screenshot set referenced from the main
-[`README.md`](../../README.md). The files are **not included in this
-repository** — they must be captured from a running instance (seeded with
-representative demo data) and saved here with the exact filenames below.
-Once a file is present at the listed path, the corresponding image in the
-main README will render automatically; no other change is needed.
+[`README.md`](../../README.md). The files were captured from the live deployment (seeded demo data). `06-ai-analysis.png`
+is added once an image has been analysed with the self-hosted YOLO11 service.
 
 ## Naming convention
 

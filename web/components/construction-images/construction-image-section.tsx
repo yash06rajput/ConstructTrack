@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Upload } from "lucide-react";
 import type { AnalysisStatus } from "@prisma/client";
 
@@ -23,6 +24,7 @@ export function ConstructionImageSection({
   initialImages: ConstructionImageSummary[];
   progressRecords?: { id: string; recordDate: string; actualProgress: number | null }[];
 }) {
+  const router = useRouter();
   const [images, setImages] = useState(initialImages);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [viewingImage, setViewingImage] = useState<ConstructionImageSummary | null>(null);
@@ -30,10 +32,14 @@ export function ConstructionImageSection({
 
   function handleUploaded(uploaded: ConstructionImageSummary[]) {
     setImages((prev) => [...uploaded, ...prev]);
+    // Re-fetch server data so cached copies of this page (e.g. on back
+    // navigation) and the timeline/comparison sections include the upload.
+    router.refresh();
   }
 
   function handleDeleted(imageId: string) {
     setImages((prev) => prev.filter((image) => image.id !== imageId));
+    router.refresh();
   }
 
   function handleAnalysisStatusChange(imageId: string, status: AnalysisStatus) {

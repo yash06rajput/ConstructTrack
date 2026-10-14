@@ -115,5 +115,5 @@ included in the deployment image or downloadable at startup.
 
 ## Deployment and access control
 
-- `Dockerfile` builds a CPU-only image (PyTorch CPU wheels, `yolo11n.pt` baked in) that runs unchanged on a Hugging Face Space (Docker SDK, port 7860) or any Docker host (`$PORT`). See [`../docs/DEPLOYMENT.md`](../docs/DEPLOYMENT.md).
+- `Dockerfile` builds a CPU-only image (PyTorch CPU wheels, `yolo11n.pt` baked in) that runs on any Docker host (`$PORT`, default 7860). It is currently self-hosted; Hugging Face Docker Spaces are a paid option. See [`../docs/DEPLOYMENT.md`](../docs/DEPLOYMENT.md).
 - Set `SERVICE_API_KEY` to require an `X-API-Key` header on `/api/v1/analyze` when the service is publicly reachable. `/api/v1/health` stays open. Leave it unset for local development and tests.

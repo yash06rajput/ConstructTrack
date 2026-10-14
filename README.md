@@ -10,7 +10,7 @@ A web-based system that tracks construction-site progress from real project data
 | **Institute** | Maharaja Agrasen Institute of Technology, Delhi (GGSIPU) |
 | **Team 54** | Ashish Upadhyay (06714803123) · Yash Rajput (06814803123) · Sahil Rao (07614803123) |
 | **Faculty guide** | Dr. Seema Kalonia |
-| **Live demo** | https://construct-track-pi.vercel.app |
+| **Live demo** | _add your Vercel URL here_ |
 
 ## Contents
 
@@ -44,7 +44,7 @@ The system consists of two independently deployable services: a Next.js applicat
 - **Automated reporting** — a structured project report generated from a single project ID and stored as a snapshot.
 - **PDF export** — a genuine, server-rendered PDF of the same report.
 - **Dashboard** — portfolio view of total/active projects, average completion and at-risk projects.
-- **Cloud deployment** — Vercel + Supabase + Hugging Face Spaces, with automatic database migrations and an API-key-protected AI service.
+- **Cloud deployment** — live web app on Vercel with Supabase (PostgreSQL + storage) and automatic database migrations; the YOLO11 service is containerised with Docker and run self-hosted, protected by an optional API key.
 
 ## System Workflow
 
@@ -175,7 +175,7 @@ These results show consistency and interpretability, not forecast accuracy — c
 | AI / Computer vision | Python, FastAPI, YOLO11 (Ultralytics), OpenCV (headless), PyTorch, NumPy, Pandas |
 | Reporting | PDFKit (server-side PDF generation) |
 | Testing | Node test runner via `tsx`, pytest, ESLint, TypeScript strict mode |
-| Deployment | Vercel (web), Supabase (database + storage), Hugging Face Spaces / Docker (AI service) |
+| Deployment | Vercel (web), Supabase (database + storage), Docker / self-hosted (AI service) |
 
 ## Project Structure
 
@@ -203,8 +203,8 @@ web/                          Next.js application
 ai-service/                   Python FastAPI service
 ├── app/                        main.py, config, routes, services, schemas
 ├── tests/                      pytest suite (32 tests)
-├── Dockerfile                  CPU-only image for Hugging Face Spaces / Docker hosts
-├── hf-space-README.md          Space metadata (rename to README.md in the Space)
+├── Dockerfile                  CPU-only image for any Docker host
+├── hf-space-README.md          Optional metadata for hosting on a Hugging Face Space (paid tier)
 └── requirements.txt
 
 docs/                         Synopsis, methodology, deployment guide, figures
@@ -308,7 +308,9 @@ Open `http://localhost:3000`.
 
 ## Deployment
 
-The project deploys on free tiers — **Vercel** (web app), **Supabase** (PostgreSQL + storage) and a **Hugging Face Space** (YOLO11 service in Docker; too large for serverless functions). In Vercel, set the Root Directory to `web`; the `vercel-build` script runs `prisma generate`, `prisma migrate deploy` and `next build`. Step-by-step instructions, including environment variables and pre-demo checks, are in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+The web application is live on **Vercel** with **Supabase** (PostgreSQL + private image storage), both on free tiers: **https://construct-track-pi.vercel.app**. In Vercel the Root Directory is `web`; the `vercel-build` script runs `prisma generate`, `prisma migrate deploy` and `next build`.
+
+The **YOLO11 AI service** (PyTorch + Ultralytics) is too large for serverless functions, and free Docker hosting on Hugging Face Spaces became a paid feature in 2026, so the service is **self-hosted**: it runs on the team's machine (or any Docker host, using the included `Dockerfile`). Because the local app and the live app share the same Supabase database, every analysis result is stored centrally and is visible on the live site at any time. Step-by-step instructions are in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ## API Overview
 
@@ -378,23 +380,47 @@ Web unit tests (`node:test`) are co-located with the code under `web/lib/`; AI-s
 
 ## Screenshots
 
-The screenshots below are the recommended, minimal set to demonstrate the complete workflow — they are not yet included in this repository and need to be captured from a running instance with representative demo data (see [Getting Started](#getting-started)). Once captured, save each file at the path shown and it will render inline.
+Captured from the live deployment with the seeded demo projects (site photos are sample images generated for demonstration).
 
-| Screenshot | Path | What it should show |
-|---|---|---|
-| Dashboard | `docs/screenshots/01-dashboard.png` | Portfolio stat cards (total/active projects, average completion, at-risk count) and the recent-projects table, populated with real project data. |
-| Projects list | `docs/screenshots/02-projects-list.png` | The project cards/table with meaningful names, statuses, and completion values. |
-| Project detail | `docs/screenshots/03-project-detail.png` | Project header/info plus navigation into progress, images, AI analysis, delay prediction, and reports. |
-| Progress tracking | `docs/screenshots/04-progress-tracking.png` | Progress KPI cards, the planned-vs-actual chart, and the historical progress table. |
-| Construction images | `docs/screenshots/05-construction-images.png` | The image gallery with upload dates and analysis status, in a populated (non-empty) state. |
-| AI analysis | `docs/screenshots/06-ai-analysis.png` | A completed analysis result — detected objects, confidence values, and the "visual evidence only" labeling. |
-| Delay prediction | `docs/screenshots/07-delay-prediction.png` | Estimated completion date, predicted delay, data-sufficiency label, and supporting KPI cards. |
-| Risk analysis | `docs/screenshots/08-risk-analysis.png` | The schedule risk score, its risk band, and the factor-level explanations. |
-| Reports list | `docs/screenshots/09-reports-list.png` | The generated-reports table with title, generation date, and View/Download actions. |
-| Report detail | `docs/screenshots/10-report-detail.png` | Enough of the web report (header through methodology/limitations) to show it is a complete, professional document. |
-| PDF report | `docs/screenshots/11-pdf-report.png` | The actual exported PDF file opened in a PDF viewer — not a screenshot of the HTML report. |
+**Dashboard — portfolio KPIs and recent projects**
 
-See [`docs/screenshots/README.md`](docs/screenshots/README.md) for the full naming convention and capture notes.
+![Dashboard — portfolio KPIs and recent projects](docs/screenshots/01-dashboard.png)
+
+**Projects — status badges and completion**
+
+![Projects — status badges and completion](docs/screenshots/02-projects-list.png)
+
+**Project detail — completion, plan, deviation and status**
+
+![Project detail — completion, plan, deviation and status](docs/screenshots/03-project-detail.png)
+
+**Progress tracking — planned vs. actual chart and history**
+
+![Progress tracking — planned vs. actual chart and history](docs/screenshots/04-progress-tracking.png)
+
+**Construction images — site photos over time**
+
+![Construction images — site photos over time](docs/screenshots/05-construction-images.png)
+
+**Delay prediction — velocity, projected completion, prediction history**
+
+![Delay prediction — velocity, projected completion, prediction history](docs/screenshots/07-delay-prediction.png)
+
+**Schedule risk — 72/100 HIGH with factor explanations**
+
+![Schedule risk — 72/100 HIGH with factor explanations](docs/screenshots/08-risk-analysis.png)
+
+**Reports list**
+
+![Reports list](docs/screenshots/09-reports-list.png)
+
+**Generated report — Metro Station Annex, 91/100 CRITICAL**
+
+![Generated report — Metro Station Annex, 91/100 CRITICAL](docs/screenshots/10-report-detail.png)
+
+**Printable report layout**
+
+![Printable report layout](docs/screenshots/11-pdf-report.png)
 
 ## Documentation
 

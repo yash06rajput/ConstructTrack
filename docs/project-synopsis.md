@@ -62,7 +62,7 @@ A single web application lets a project manager record structured progress obser
 - Weighted schedule-risk scoring (0–100) with LOW / MODERATE / HIGH / CRITICAL bands and factor-level explanations.
 - Automated report generation from a single project identifier, stored as a structured snapshot, with a print-friendly web view and a server-generated PDF.
 - A portfolio-level dashboard summarising all projects.
-- Cloud deployment on Vercel, Supabase and Hugging Face Spaces, with automatic database migrations and a protected AI-service endpoint.
+- Cloud deployment of the web application on Vercel and Supabase with automatic database migrations; the YOLO11 service is containerised with Docker and self-hosted, with a protected endpoint.
 - Automated tests: 61 unit tests for the web application and 32 tests for the AI service.
 
 **Out of scope for the current system (see Section 7)**
@@ -79,7 +79,7 @@ Authentication and multi-user access control, chart-embedded PDF reports, a form
 | AI / Computer vision | Python, FastAPI, YOLO11 (Ultralytics), OpenCV (headless), PyTorch, NumPy |
 | Reporting | PDFKit (server-side PDF generation) |
 | Testing | Node test runner (tsx), pytest, ESLint, TypeScript strict mode |
-| Deployment | Vercel (web), Supabase (database and storage), Hugging Face Spaces with Docker (AI service) |
+| Deployment | Vercel (web), Supabase (database and storage), Docker / self-hosted (AI service) |
 
 ## 7. Future Scope
 
